@@ -1,0 +1,9 @@
+{
+  "name": "promptcache",
+  "version": "0.1.0",
+  "description": "Minimal prompt management app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
