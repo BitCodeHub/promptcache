@@ -1,11 +1,47 @@
 <!DOCTYPE html>
+4vfv8b-codex/design-productivity-app-promptcache
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+=======
 <html>
 <head>
   <meta charset="utf-8" />
+main
   <title>PromptCache</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+4vfv8b-codex/design-productivity-app-promptcache
+  <div class="container">
+    <header>
+      <h1>PromptCache</h1>
+      <div class="search">
+        <input id="search" placeholder="Search prompts" />
+        <button id="searchBtn">Search</button>
+      </div>
+    </header>
+    <section class="add">
+      <h2>Add Prompt</h2>
+      <form id="newPrompt">
+        <label>Prompt Text
+          <textarea id="text" placeholder="Prompt text"></textarea>
+        </label>
+        <label>Tool
+          <input id="tool" placeholder="GPT-4, Midjourney" />
+        </label>
+        <label>Tags
+          <input id="tags" placeholder="e.g. copywriting, design" />
+        </label>
+        <button type="submit">Add Prompt</button>
+      </form>
+    </section>
+    <section class="list">
+      <ul id="list"></ul>
+    </section>
+  </div>
+=======
   <h1>PromptCache</h1>
   <form id="newPrompt">
     <textarea id="text" placeholder="Prompt text"></textarea><br>
@@ -16,6 +52,7 @@
   <input id="search" placeholder="Search" />
   <button onclick="loadPrompts()">Search</button>
   <ul id="list"></ul>
+main
   <script src="app.js"></script>
 </body>
 </html>
