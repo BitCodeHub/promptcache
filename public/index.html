@@ -11,7 +11,53 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
+dlvqre-codex/improve-ui-design-of-promptcache
   <div id="root"></div>
   <script type="text/babel" src="app.js"></script>
+=======
+  <div class="app">
+    <header class="header">
+      <h1>PromptCache</h1>
+      <p class="tagline">Save and search your favorite AI prompts</p>
+      <div class="search">
+        <input id="search" placeholder="Search prompts" aria-label="Search prompts" />
+qr3h0z-codex/improve-ui-design-of-promptcache
+        <button id="searchBtn" aria-label="Search">Search</button>
+=======
+        <button id="searchBtn">Search</button>
+main
+      </div>
+    </header>
+    <main>
+      <section class="add">
+        <h2>Add Prompt</h2>
+qr3h0z-codex/improve-ui-design-of-promptcache
+        <form id="newPrompt" novalidate>
+=======
+        <form id="newPrompt">
+main
+          <label>Prompt Text
+            <textarea id="text" placeholder="Prompt text"></textarea>
+          </label>
+          <label>Tool
+qr3h0z-codex/improve-ui-design-of-promptcache
+            <input id="tool" placeholder="e.g. GPT-4 or Midjourney" />
+=======
+            <input id="tool" placeholder="e.g. GPT-4, Midjourney" />
+main
+          </label>
+          <label>Tags
+            <input id="tags" placeholder="e.g. copywriting, design" />
+          </label>
+          <button type="submit">Add Prompt</button>
+        </form>
+      </section>
+      <section class="list">
+        <ul id="list"></ul>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+main
 </body>
 </html>

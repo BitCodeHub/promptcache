@@ -1,3 +1,4 @@
+dlvqre-codex/improve-ui-design-of-promptcache
 const { useState, useEffect } = React;
 
 function App() {
@@ -12,11 +13,32 @@ function App() {
     const data = await res.json();
     setPrompts(data);
   };
+=======
+async function loadPrompts() {
+  const q = document.getElementById('search').value;
+  const res = await fetch('/api/prompts/search?q=' + encodeURIComponent(q));
+  const data = await res.json();
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  data.forEach(p => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <div class="prompt-header">
+        <span class="tool">${p.tool}</span>
+        <span class="tags">${p.tags.join(', ')}</span>
+      </div>
+      <div class="text">${p.text}</div>
+    `;
+    list.appendChild(li);
+  });
+}
+main
 
   useEffect(() => {
     loadPrompts();
   }, []);
 
+dlvqre-codex/improve-ui-design-of-promptcache
   const addPrompt = async (e) => {
     e.preventDefault();
     const tagArray = tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -92,3 +114,8 @@ function App() {
 }
 
 ReactDOM.render(<App />, document.getElementById('root'));
+=======
+document.getElementById('searchBtn').addEventListener('click', loadPrompts);
+
+loadPrompts();
+main
