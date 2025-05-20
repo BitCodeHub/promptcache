@@ -1,6 +1,6 @@
 # PromptCache
 
-Simple prompt management app for creative professionals.
+Simple prompt management app for creative professionals with a modern dark theme.
 
 ## Features
 - Add prompts with tool and tags
@@ -8,6 +8,6 @@ Simple prompt management app for creative professionals.
 
 ## Usage
 1. Run `npm start` to start the server.
-2. Open `http://localhost:3000` in your browser.
+2. Open `http://localhost:3000` in your browser to use the web app.
 
 Prompts are stored in `prompts.json`.
