@@ -85,6 +85,14 @@ function handleAPI(req, res) {
     });
     return;
   }
+  if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
+    const id = parseInt(parsed.pathname.split('/')[3]);
+    const idx = prompts.findIndex(p => p.id === id);
+    if (idx === -1) return send(res, 404, { error: 'Not found' });
+    prompts.splice(idx, 1);
+    save();
+    return send(res, 204, '');
+  }
   send(res, 404, { error: 'Not found' });
 }
 

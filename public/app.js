@@ -6,16 +6,14 @@ async function loadPrompts() {
   list.innerHTML = '';
   data.forEach(p => {
     const li = document.createElement('li');
-4vfv8b-codex/design-productivity-app-promptcache
     li.innerHTML = `
       <div class="prompt-header">
         <span class="tool">${p.tool}</span>
         <span class="tags">${p.tags.join(', ')}</span>
+        <button class="delete" data-id="${p.id}" aria-label="Delete">✕</button>
       </div>
-      <div class="text">${p.text}</div>`;
-=======
-    li.textContent = `${p.tool}: ${p.text} [${p.tags.join(', ')}]`;
-main
+      <div class="text">${p.text}</div>
+    `;
     list.appendChild(li);
   });
 }
@@ -36,9 +34,14 @@ document.getElementById('newPrompt').addEventListener('submit', async e => {
   loadPrompts();
 });
 
-4vfv8b-codex/design-productivity-app-promptcache
 document.getElementById('searchBtn').addEventListener('click', loadPrompts);
 
-=======
-main
+document.getElementById('list').addEventListener('click', async e => {
+  if (e.target.classList.contains('delete')) {
+    const id = e.target.dataset.id;
+    await fetch('/api/prompts/' + id, { method: 'DELETE' });
+    loadPrompts();
+  }
+});
+
 loadPrompts();
