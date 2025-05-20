@@ -6,16 +6,13 @@ async function loadPrompts() {
   list.innerHTML = '';
   data.forEach(p => {
     const li = document.createElement('li');
-4vfv8b-codex/design-productivity-app-promptcache
     li.innerHTML = `
       <div class="prompt-header">
         <span class="tool">${p.tool}</span>
         <span class="tags">${p.tags.join(', ')}</span>
       </div>
-      <div class="text">${p.text}</div>`;
-=======
-    li.textContent = `${p.tool}: ${p.text} [${p.tags.join(', ')}]`;
-main
+      <div class="text">${p.text}</div>
+    `;
     list.appendChild(li);
   });
 }
@@ -36,9 +33,6 @@ document.getElementById('newPrompt').addEventListener('submit', async e => {
   loadPrompts();
 });
 
-4vfv8b-codex/design-productivity-app-promptcache
 document.getElementById('searchBtn').addEventListener('click', loadPrompts);
 
-=======
-main
 loadPrompts();
