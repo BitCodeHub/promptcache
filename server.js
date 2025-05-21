@@ -217,13 +217,117 @@ function handleAPI(req, res) {
 
   // --- DELETE /api/prompts/:id ---
   if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
-    const id = parseInt(parsed.pathname.split('/')[3]);
-    const idx = prompts.findIndex(p => p.id === id);
-    if (idx === -1) return send(res, 404, { error: 'Not found' });
-    prompts.splice(idx, 1);
-    save();
-    return send(res, 204, '');
+    const idStr = parsed.pathname.split('/')[3];
+    if (!idStr) {
+      return send(res, 400, { error: 'Prompt ID is required' });
+    }
+    const id = parseInt(idStr);
+    if (isNaN(id)) {
+      return send(res, 400, { error: 'Invalid Prompt ID format' });
+    }
+
+    const index = prompts.findIndex(p => p.id === id);
+
+    if (index === -1) {
+      return send(res, 404, { error: 'Prompt not found' });
+    }
+
+    prompts.splice(index, 1); // Remove the prompt from the array
+    save(); // Persist changes to prompts.json
+
+    return send(res, 200, { message: 'Prompt deleted successfully' });
   }
+
+  // --- GET /api/prompts/export ---
+  if (parsed.pathname === '/api/prompts/export' && req.method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Content-Disposition': 'attachment; filename="prompts_export.json"'
+    });
+    // Send a stringified version of prompts, but only specific fields
+    // This prevents exporting internal state like history or usageCount if not desired
+    const exportablePrompts = prompts.map(p => ({
+      text: p.text,
+      tool: p.tool,
+      tags: p.tags
+      // We intentionally do not export id, favorite, history, usageCount, lastUsed
+    }));
+    return res.end(JSON.stringify(exportablePrompts, null, 2));
+  }
+
+  // --- POST /api/prompts/import ---
+  if (parsed.pathname === '/api/prompts/import' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const importedData = JSON.parse(body);
+        if (!Array.isArray(importedData)) {
+          return send(res, 400, { error: 'Invalid import format: Data must be an array of prompts.' });
+        }
+
+        let importedCount = 0;
+        for (const importedPrompt of importedData) {
+          if (typeof importedPrompt.text !== 'string' || importedPrompt.text.trim() === '') {
+            // Skip prompts without valid text
+            console.warn('Skipping import of prompt due to missing or empty text:', importedPrompt);
+            continue; 
+          }
+
+          const newPrompt = {
+            id: nextId++,
+            text: importedPrompt.text,
+            tool: typeof importedPrompt.tool === 'string' ? importedPrompt.tool : '',
+            tags: Array.isArray(importedPrompt.tags) ? importedPrompt.tags.filter(tag => typeof tag === 'string') : [],
+            favorite: false,
+            history: [],
+            usageCount: 0,
+            lastUsed: null
+          };
+          prompts.push(newPrompt);
+          importedCount++;
+        }
+
+        if (importedCount > 0) {
+          save();
+        }
+        send(res, 201, { message: `Import successful. ${importedCount} prompts imported.`, importedCount });
+
+      } catch (err) {
+        send(res, 400, { error: 'Invalid JSON payload or error during import.' });
+      }
+    });
+    return;
+  }
+
+  // --- POST /api/prompts/:id/logusage ---
+  if (parsed.pathname.match(/^\/api\/prompts\/(\d+)\/logusage$/) && req.method === 'POST') {
+    const idStr = parsed.pathname.split('/')[3];
+    if (!idStr) { // Should not happen with regex match but good practice
+      return send(res, 400, { error: 'Prompt ID is required in path' });
+    }
+    const id = parseInt(idStr);
+    if (isNaN(id)) { // Should not happen with regex match but good practice
+      return send(res, 400, { error: 'Invalid Prompt ID format' });
+    }
+
+    const index = prompts.findIndex(p => p.id === id);
+
+    if (index === -1) {
+      return send(res, 404, { error: 'Prompt not found' });
+    }
+
+    // Update usage count and last used timestamp
+    prompts[index].usageCount = (prompts[index].usageCount || 0) + 1;
+    prompts[index].lastUsed = new Date().toISOString();
+
+    save(); // Persist changes
+
+    return send(res, 200, prompts[index]); // Send back the updated prompt
+  }
+
+main
+  send(res, 404, { error: 'Not found' });
 =======
   // --- DELETE /api/prompts/:id ---
   if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
