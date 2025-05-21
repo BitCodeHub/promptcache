@@ -139,6 +139,8 @@ function handleAPI(req, res) {
     });
     return;
   }
+6dgucv-codex/review-repo-and-suggest-features
+=======
 
   // --- GET /api/prompts/:id/history ---
   if (parsed.pathname.match(/^\/api\/prompts\/(\d+)\/history$/) && req.method === 'GET') {
@@ -225,6 +227,7 @@ function handleAPI(req, res) {
     return send(res, 204, '');
   }
 =======
+main
   // --- DELETE /api/prompts/:id ---
   if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
     const idStr = parsed.pathname.split('/')[3];
@@ -336,7 +339,6 @@ function handleAPI(req, res) {
     return send(res, 200, prompts[index]); // Send back the updated prompt
   }
 
-main
   send(res, 404, { error: 'Not found' });
 }
 
