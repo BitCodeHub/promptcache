@@ -221,6 +221,8 @@ oix40c-codex/review-repo-and-suggest-features
 
   // --- DELETE /api/prompts/:id ---
   if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
+feature-recommendations-implemented
+=======
     const id = parseInt(parsed.pathname.split('/')[3]);
     const idx = prompts.findIndex(p => p.id === id);
     if (idx === -1) return send(res, 404, { error: 'Not found' });
@@ -233,6 +235,7 @@ main
 main
   // --- DELETE /api/prompts/:id ---
   if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
+main
     const idStr = parsed.pathname.split('/')[3];
     if (!idStr) {
       return send(res, 400, { error: 'Prompt ID is required' });
