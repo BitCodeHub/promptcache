@@ -139,6 +139,10 @@ function handleAPI(req, res) {
     });
     return;
   }
+oix40c-codex/review-repo-and-suggest-features
+=======
+6dgucv-codex/review-repo-and-suggest-features
+=======
 
   // --- GET /api/prompts/:id/history ---
   if (parsed.pathname.match(/^\/api\/prompts\/(\d+)\/history$/) && req.method === 'GET') {
@@ -217,6 +221,21 @@ function handleAPI(req, res) {
 
   // --- DELETE /api/prompts/:id ---
   if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
+feature-recommendations-implemented
+=======
+    const id = parseInt(parsed.pathname.split('/')[3]);
+    const idx = prompts.findIndex(p => p.id === id);
+    if (idx === -1) return send(res, 404, { error: 'Not found' });
+    prompts.splice(idx, 1);
+    save();
+    return send(res, 204, '');
+  }
+=======
+main
+main
+  // --- DELETE /api/prompts/:id ---
+  if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
+main
     const idStr = parsed.pathname.split('/')[3];
     if (!idStr) {
       return send(res, 400, { error: 'Prompt ID is required' });
