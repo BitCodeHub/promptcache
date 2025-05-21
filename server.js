@@ -78,8 +78,10 @@ function handleAPI(req, res) {
           text: data.text || '',
           tool: data.tool || '',
           tags: data.tags || [],
-          favorite: false,
-          history: []
+          favorite: data.favorite || false, // Ensure favorite status can be set on creation
+          history: [], // Assuming history is not set on creation
+          usageCount: 0,    // New field for usage tracking
+          lastUsed: null    // New field for last used timestamp
         };
         prompts.push(prompt);
         save();
@@ -126,6 +128,33 @@ function handleAPI(req, res) {
 
     return send(res, 200, { message: 'Prompt deleted successfully' });
   }
+
+  // --- POST /api/prompts/:id/logusage ---
+  if (parsed.pathname.match(/^\/api\/prompts\/(\d+)\/logusage$/) && req.method === 'POST') {
+    const idStr = parsed.pathname.split('/')[3];
+    if (!idStr) { // Should not happen with regex match but good practice
+      return send(res, 400, { error: 'Prompt ID is required in path' });
+    }
+    const id = parseInt(idStr);
+    if (isNaN(id)) { // Should not happen with regex match but good practice
+      return send(res, 400, { error: 'Invalid Prompt ID format' });
+    }
+
+    const index = prompts.findIndex(p => p.id === id);
+
+    if (index === -1) {
+      return send(res, 404, { error: 'Prompt not found' });
+    }
+
+    // Update usage count and last used timestamp
+    prompts[index].usageCount = (prompts[index].usageCount || 0) + 1;
+    prompts[index].lastUsed = new Date().toISOString();
+
+    save(); // Persist changes
+
+    return send(res, 200, prompts[index]); // Send back the updated prompt
+  }
+
   send(res, 404, { error: 'Not found' });
 }
 
