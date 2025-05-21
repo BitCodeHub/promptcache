@@ -40,10 +40,29 @@ function handleAPI(req, res) {
   }
   if (parsed.pathname === '/api/prompts/search' && req.method === 'GET') {
     const q = (parsed.query.q || '').toLowerCase();
-    const tag = parsed.query.tag;
+    const tagQuery = parsed.query.tag; // e.g., "tag1,tag2, tag3 "
+    
+    let queryTags = [];
+    if (tagQuery && typeof tagQuery === 'string' && tagQuery.trim() !== '') {
+      queryTags = tagQuery.split(',')
+                          .map(tag => tag.trim())
+                          .filter(tag => tag !== '');
+    }
+
     const filtered = prompts.filter(p => {
-      const textMatch = p.text.toLowerCase().includes(q);
-      const tagMatch = tag ? p.tags.includes(tag) : true;
+      // Keyword search (q parameter)
+      const textMatch = (q === '') || // if q is empty, it's a match for text
+                        p.text.toLowerCase().includes(q) ||
+                        p.tool.toLowerCase().includes(q) || // Also search in tool
+                        p.tags.some(pt => pt.toLowerCase().includes(q)); // And in individual tags
+
+      // Tag search (tag parameter)
+      let tagMatch = true; // Default to true if no tags are specified in the query
+      if (queryTags.length > 0) {
+        // If there are queryTags, prompt must have at least one of them
+        tagMatch = p.tags.some(promptTag => queryTags.includes(promptTag));
+      }
+      
       return textMatch && tagMatch;
     });
     return send(res, 200, filtered);
@@ -59,8 +78,10 @@ function handleAPI(req, res) {
           text: data.text || '',
           tool: data.tool || '',
           tags: data.tags || [],
-          favorite: false,
-          history: []
+          favorite: data.favorite || false, // Ensure favorite status can be set on creation
+          history: [], // Assuming history is not set on creation
+          usageCount: 0,    // New field for usage tracking
+          lastUsed: null    // New field for last used timestamp
         };
         prompts.push(prompt);
         save();
@@ -85,6 +106,7 @@ function handleAPI(req, res) {
     });
     return;
   }
+7ubkob-codex/improve-ui-design-of-promptcache
   if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
     const id = parseInt(parsed.pathname.split('/')[3]);
     const idx = prompts.findIndex(p => p.id === id);
@@ -93,6 +115,57 @@ function handleAPI(req, res) {
     save();
     return send(res, 204, '');
   }
+=======
+  // --- DELETE /api/prompts/:id ---
+  if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
+    const idStr = parsed.pathname.split('/')[3];
+    if (!idStr) {
+      return send(res, 400, { error: 'Prompt ID is required' });
+    }
+    const id = parseInt(idStr);
+    if (isNaN(id)) {
+      return send(res, 400, { error: 'Invalid Prompt ID format' });
+    }
+
+    const index = prompts.findIndex(p => p.id === id);
+
+    if (index === -1) {
+      return send(res, 404, { error: 'Prompt not found' });
+    }
+
+    prompts.splice(index, 1); // Remove the prompt from the array
+    save(); // Persist changes to prompts.json
+
+    return send(res, 200, { message: 'Prompt deleted successfully' });
+  }
+
+  // --- POST /api/prompts/:id/logusage ---
+  if (parsed.pathname.match(/^\/api\/prompts\/(\d+)\/logusage$/) && req.method === 'POST') {
+    const idStr = parsed.pathname.split('/')[3];
+    if (!idStr) { // Should not happen with regex match but good practice
+      return send(res, 400, { error: 'Prompt ID is required in path' });
+    }
+    const id = parseInt(idStr);
+    if (isNaN(id)) { // Should not happen with regex match but good practice
+      return send(res, 400, { error: 'Invalid Prompt ID format' });
+    }
+
+    const index = prompts.findIndex(p => p.id === id);
+
+    if (index === -1) {
+      return send(res, 404, { error: 'Prompt not found' });
+    }
+
+    // Update usage count and last used timestamp
+    prompts[index].usageCount = (prompts[index].usageCount || 0) + 1;
+    prompts[index].lastUsed = new Date().toISOString();
+
+    save(); // Persist changes
+
+    return send(res, 200, prompts[index]); // Send back the updated prompt
+  }
+
+main
   send(res, 404, { error: 'Not found' });
 }
 
