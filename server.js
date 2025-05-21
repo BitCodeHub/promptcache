@@ -106,6 +106,16 @@ function handleAPI(req, res) {
     });
     return;
   }
+7ubkob-codex/improve-ui-design-of-promptcache
+  if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
+    const id = parseInt(parsed.pathname.split('/')[3]);
+    const idx = prompts.findIndex(p => p.id === id);
+    if (idx === -1) return send(res, 404, { error: 'Not found' });
+    prompts.splice(idx, 1);
+    save();
+    return send(res, 204, '');
+  }
+=======
   // --- DELETE /api/prompts/:id ---
   if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
     const idStr = parsed.pathname.split('/')[3];
@@ -155,6 +165,7 @@ function handleAPI(req, res) {
     return send(res, 200, prompts[index]); // Send back the updated prompt
   }
 
+main
   send(res, 404, { error: 'Not found' });
 }
 
