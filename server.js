@@ -41,7 +41,8 @@ function handleAPI(req, res) {
   if (parsed.pathname === '/api/prompts/search' && req.method === 'GET') {
     const q = (parsed.query.q || '').toLowerCase();
     const tagQuery = parsed.query.tag; // e.g., "tag1,tag2, tag3 "
-    
+    const toolQuery = (parsed.query.tool || '').toLowerCase(); // New tool query parameter
+
     let queryTags = [];
     if (tagQuery && typeof tagQuery === 'string' && tagQuery.trim() !== '') {
       queryTags = tagQuery.split(',')
@@ -60,10 +61,15 @@ function handleAPI(req, res) {
       let tagMatch = true; // Default to true if no tags are specified in the query
       if (queryTags.length > 0) {
         // If there are queryTags, prompt must have at least one of them
-        tagMatch = p.tags.some(promptTag => queryTags.includes(promptTag));
+        // Ensure p.tags exists and is an array before calling .some()
+        tagMatch = Array.isArray(p.tags) && p.tags.some(promptTag => queryTags.includes(promptTag.toLowerCase()));
       }
+
+      // Tool filter (toolQuery parameter)
+      // Ensure p.tool exists before calling toLowerCase()
+      const toolMatch = (toolQuery === '') || (p.tool && p.tool.toLowerCase() === toolQuery);
       
-      return textMatch && tagMatch;
+      return textMatch && tagMatch && toolMatch;
     });
     return send(res, 200, filtered);
   }
@@ -97,15 +103,134 @@ function handleAPI(req, res) {
     let body = '';
     req.on('data', c => body += c);
     req.on('end', () => {
-      const data = JSON.parse(body);
-      const idx = prompts.findIndex(p => p.id === id);
-      if (idx === -1) return send(res, 404, { error: 'Not found' });
-      prompts[idx] = { ...prompts[idx], ...data };
-      save();
-      send(res, 200, prompts[idx]);
+      try {
+        const data = JSON.parse(body);
+        const idx = prompts.findIndex(p => p.id === id);
+        if (idx === -1) return send(res, 404, { error: 'Not found' });
+
+        // Ensure history array exists and is initialized
+        if (!prompts[idx].history) {
+          prompts[idx].history = [];
+        }
+
+        // Save current state to history
+        const currentVersion = { ...prompts[idx] };
+        // Remove history from the version being saved to avoid nested histories
+        delete currentVersion.history; 
+        
+        prompts[idx].history.unshift({ // Add to the beginning of the array
+          versionId: new Date().toISOString(),
+          promptData: currentVersion
+        });
+
+        // Limit history to 10 versions
+        if (prompts[idx].history.length > 10) {
+          prompts[idx].history.pop(); // Remove the oldest version
+        }
+
+        // Update prompt with new data
+        prompts[idx] = { ...prompts[idx], ...data, history: prompts[idx].history }; // Persist history
+
+        save();
+        send(res, 200, prompts[idx]);
+      } catch (err) {
+        send(res, 400, { error: 'Invalid JSON or error during history update' });
+      }
     });
     return;
   }
+oix40c-codex/review-repo-and-suggest-features
+=======
+6dgucv-codex/review-repo-and-suggest-features
+=======
+
+  // --- GET /api/prompts/:id/history ---
+  if (parsed.pathname.match(/^\/api\/prompts\/(\d+)\/history$/) && req.method === 'GET') {
+    const idStr = parsed.pathname.split('/')[3];
+    const id = parseInt(idStr);
+
+    if (isNaN(id)) {
+      return send(res, 400, { error: 'Invalid Prompt ID format' });
+    }
+
+    const prompt = prompts.find(p => p.id === id);
+    if (!prompt) {
+      return send(res, 404, { error: 'Prompt not found' });
+    }
+
+    return send(res, 200, prompt.history || []);
+  }
+  
+  // --- POST /api/prompts/:id/revert/:versionId ---
+  if (parsed.pathname.match(/^\/api\/prompts\/(\d+)\/revert\/([^/]+)$/) && req.method === 'POST') {
+    const idStr = parsed.pathname.split('/')[3];
+    const versionId = parsed.pathname.split('/')[5];
+    const id = parseInt(idStr);
+
+    if (isNaN(id)) {
+      return send(res, 400, { error: 'Invalid Prompt ID format' });
+    }
+
+    const promptIndex = prompts.findIndex(p => p.id === id);
+    if (promptIndex === -1) {
+      return send(res, 404, { error: 'Prompt not found' });
+    }
+
+    const prompt = prompts[promptIndex];
+    if (!prompt.history) {
+      return send(res, 404, { error: 'No history found for this prompt' });
+    }
+
+    const historyEntry = prompt.history.find(h => h.versionId === versionId);
+    if (!historyEntry) {
+      return send(res, 404, { error: 'Version not found in history' });
+    }
+
+    // Save current state (before reverting) to history
+    const currentVersionData = { 
+        text: prompt.text, 
+        tool: prompt.tool, 
+        tags: prompt.tags,
+        favorite: prompt.favorite,
+        // Potentially other fields like usageCount, lastUsed should be preserved from the current state,
+        // or explicitly decide if reverting should reset them too.
+        // For now, let's assume we only revert text, tool, tags.
+    };
+
+    prompt.history.unshift({
+      versionId: new Date().toISOString(),
+      promptData: currentVersionData
+    });
+
+    // Limit history
+    if (prompt.history.length > 10) {
+      prompt.history.pop();
+    }
+    
+    // Revert prompt to historical version's data
+    prompt.text = historyEntry.promptData.text;
+    prompt.tool = historyEntry.promptData.tool;
+    prompt.tags = historyEntry.promptData.tags;
+    // Note: We are not reverting 'favorite', 'usageCount', 'lastUsed' status by default.
+    // This can be a design choice. If they need to be reverted, copy them from historyEntry.promptData as well.
+
+    prompts[promptIndex] = prompt; // Update the prompt in the main array
+    save();
+    return send(res, 200, prompt);
+  }
+
+  // --- DELETE /api/prompts/:id ---
+  if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
+    const id = parseInt(parsed.pathname.split('/')[3]);
+    const idx = prompts.findIndex(p => p.id === id);
+    if (idx === -1) return send(res, 404, { error: 'Not found' });
+    prompts.splice(idx, 1);
+    save();
+    return send(res, 204, '');
+  }
+=======
+main
+main
   // --- DELETE /api/prompts/:id ---
   if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
     const idStr = parsed.pathname.split('/')[3];
@@ -127,6 +252,68 @@ function handleAPI(req, res) {
     save(); // Persist changes to prompts.json
 
     return send(res, 200, { message: 'Prompt deleted successfully' });
+  }
+
+  // --- GET /api/prompts/export ---
+  if (parsed.pathname === '/api/prompts/export' && req.method === 'GET') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Content-Disposition': 'attachment; filename="prompts_export.json"'
+    });
+    // Send a stringified version of prompts, but only specific fields
+    // This prevents exporting internal state like history or usageCount if not desired
+    const exportablePrompts = prompts.map(p => ({
+      text: p.text,
+      tool: p.tool,
+      tags: p.tags
+      // We intentionally do not export id, favorite, history, usageCount, lastUsed
+    }));
+    return res.end(JSON.stringify(exportablePrompts, null, 2));
+  }
+
+  // --- POST /api/prompts/import ---
+  if (parsed.pathname === '/api/prompts/import' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const importedData = JSON.parse(body);
+        if (!Array.isArray(importedData)) {
+          return send(res, 400, { error: 'Invalid import format: Data must be an array of prompts.' });
+        }
+
+        let importedCount = 0;
+        for (const importedPrompt of importedData) {
+          if (typeof importedPrompt.text !== 'string' || importedPrompt.text.trim() === '') {
+            // Skip prompts without valid text
+            console.warn('Skipping import of prompt due to missing or empty text:', importedPrompt);
+            continue; 
+          }
+
+          const newPrompt = {
+            id: nextId++,
+            text: importedPrompt.text,
+            tool: typeof importedPrompt.tool === 'string' ? importedPrompt.tool : '',
+            tags: Array.isArray(importedPrompt.tags) ? importedPrompt.tags.filter(tag => typeof tag === 'string') : [],
+            favorite: false,
+            history: [],
+            usageCount: 0,
+            lastUsed: null
+          };
+          prompts.push(newPrompt);
+          importedCount++;
+        }
+
+        if (importedCount > 0) {
+          save();
+        }
+        send(res, 201, { message: `Import successful. ${importedCount} prompts imported.`, importedCount });
+
+      } catch (err) {
+        send(res, 400, { error: 'Invalid JSON payload or error during import.' });
+      }
+    });
+    return;
   }
 
   // --- POST /api/prompts/:id/logusage ---
