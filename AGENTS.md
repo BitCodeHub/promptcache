@@ -11,3 +11,9 @@ This repository contains a Node.js server with React (web) and React Native (mob
 - Remove merge conflict markers such as `=======`, `7ubkob-codex`, etc., when encountered.
 - After making code changes, run `node server.js` to verify the server starts without errors.
 - There are currently no automated tests.
+6dgucv-codex/review-repo-and-suggest-features
+=======
+- Use **two spaces** for indentation in JavaScript and JSON files.
+- When editing `prompts.json`, keep each prompt in the form `{ id, text, tool, tags, usageCount, lastUsed }`.
+- After adding dependencies in either the root or `mobile` folder, run `npm install` in that folder to update `package-lock.json`.
+main
