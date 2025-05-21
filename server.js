@@ -40,10 +40,29 @@ function handleAPI(req, res) {
   }
   if (parsed.pathname === '/api/prompts/search' && req.method === 'GET') {
     const q = (parsed.query.q || '').toLowerCase();
-    const tag = parsed.query.tag;
+    const tagQuery = parsed.query.tag; // e.g., "tag1,tag2, tag3 "
+    
+    let queryTags = [];
+    if (tagQuery && typeof tagQuery === 'string' && tagQuery.trim() !== '') {
+      queryTags = tagQuery.split(',')
+                          .map(tag => tag.trim())
+                          .filter(tag => tag !== '');
+    }
+
     const filtered = prompts.filter(p => {
-      const textMatch = p.text.toLowerCase().includes(q);
-      const tagMatch = tag ? p.tags.includes(tag) : true;
+      // Keyword search (q parameter)
+      const textMatch = (q === '') || // if q is empty, it's a match for text
+                        p.text.toLowerCase().includes(q) ||
+                        p.tool.toLowerCase().includes(q) || // Also search in tool
+                        p.tags.some(pt => pt.toLowerCase().includes(q)); // And in individual tags
+
+      // Tag search (tag parameter)
+      let tagMatch = true; // Default to true if no tags are specified in the query
+      if (queryTags.length > 0) {
+        // If there are queryTags, prompt must have at least one of them
+        tagMatch = p.tags.some(promptTag => queryTags.includes(promptTag));
+      }
+      
       return textMatch && tagMatch;
     });
     return send(res, 200, filtered);
@@ -84,6 +103,28 @@ function handleAPI(req, res) {
       send(res, 200, prompts[idx]);
     });
     return;
+  }
+  // --- DELETE /api/prompts/:id ---
+  if (parsed.pathname.startsWith('/api/prompts/') && req.method === 'DELETE') {
+    const idStr = parsed.pathname.split('/')[3];
+    if (!idStr) {
+      return send(res, 400, { error: 'Prompt ID is required' });
+    }
+    const id = parseInt(idStr);
+    if (isNaN(id)) {
+      return send(res, 400, { error: 'Invalid Prompt ID format' });
+    }
+
+    const index = prompts.findIndex(p => p.id === id);
+
+    if (index === -1) {
+      return send(res, 404, { error: 'Prompt not found' });
+    }
+
+    prompts.splice(index, 1); // Remove the prompt from the array
+    save(); // Persist changes to prompts.json
+
+    return send(res, 200, { message: 'Prompt deleted successfully' });
   }
   send(res, 404, { error: 'Not found' });
 }
